@@ -31,6 +31,7 @@ Thumbs.db
 
 # Project #
 ###########
+/out
 .classpath
 .externalToolBuilders
 .gradle
