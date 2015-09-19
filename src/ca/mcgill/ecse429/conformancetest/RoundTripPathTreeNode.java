@@ -11,24 +11,24 @@ import ca.mcgill.ecse429.conformancetest.statemodel.StateMachine;
 import ca.mcgill.ecse429.conformancetest.statemodel.Transition;
 
 /**
- * Represents a round trip path tree for a state machine.
+ * Represents a node in a round trip path tree for a state machine.
  */
-public class RoundTripPathTree {
+public class RoundTripPathTreeNode {
     private final Transition transition;
-    private final List<RoundTripPathTree> children;
+    private final List<RoundTripPathTreeNode> children;
 
     // No transition, this is the alpha state
-    private RoundTripPathTree(List<RoundTripPathTree> children) {
+    private RoundTripPathTreeNode(List<RoundTripPathTreeNode> children) {
         this(null, children);
     }
 
     // Just a transition, this is a leaf node
-    private RoundTripPathTree(Transition transition) {
-        this(transition, Collections.<RoundTripPathTree>emptyList());
+    private RoundTripPathTreeNode(Transition transition) {
+        this(transition, Collections.<RoundTripPathTreeNode>emptyList());
     }
 
     // Regular node with transition and children
-    private RoundTripPathTree(Transition transition, List<RoundTripPathTree> children) {
+    private RoundTripPathTreeNode(Transition transition, List<RoundTripPathTreeNode> children) {
         this.transition = transition;
         this.children = children;
     }
@@ -65,7 +65,7 @@ public class RoundTripPathTree {
      *
      * @return The children
      */
-    public List<RoundTripPathTree> getChildren() {
+    public List<RoundTripPathTreeNode> getChildren() {
         return children;
     }
 
@@ -89,7 +89,7 @@ public class RoundTripPathTree {
                     .append(" -> ").append(transition.getTo().getName())
                     .append('\n');
         }
-        for (RoundTripPathTree child : children) {
+        for (RoundTripPathTreeNode child : children) {
             builder.append(child.toString(level + 1));
         }
         return builder.toString();
@@ -101,27 +101,27 @@ public class RoundTripPathTree {
      * @param from The initial state
      * @return The tree
      */
-    public static RoundTripPathTree build(State from) {
+    public static RoundTripPathTreeNode build(State from) {
         // Create a set of visited states and add the first state as visited
         final HashSet<State> visited = new HashSet<State>();
         visited.add(from);
         // Create the subtree of the first state, which are the children of alpha
-        return new RoundTripPathTree(buildChildren(from, visited));
+        return new RoundTripPathTreeNode(buildChildren(from, visited));
     }
 
     // Builds the children for a particular state. The visited states should contain all states in the parent tree.
-    private static List<RoundTripPathTree> buildChildren(State from, Set<State> visited) {
-        final List<RoundTripPathTree> children = new ArrayList<RoundTripPathTree>();
+    private static List<RoundTripPathTreeNode> buildChildren(State from, Set<State> visited) {
+        final List<RoundTripPathTreeNode> children = new ArrayList<RoundTripPathTreeNode>();
         final List<Transition> transitions = getTransitionsFrom(from);
         for (final Transition transition : transitions) {
             final State to = transition.getTo();
             if (visited.contains(to)) {
                 // Already visited, this is a leaf
-                children.add(new RoundTripPathTree(transition));
+                children.add(new RoundTripPathTreeNode(transition));
             } else {
                 // Not visited, mark as so and generate the children
                 visited.add(to);
-                children.add(new RoundTripPathTree(transition, buildChildren(to, visited)));
+                children.add(new RoundTripPathTreeNode(transition, buildChildren(to, visited)));
             }
         }
         return children;

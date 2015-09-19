@@ -19,7 +19,7 @@ import com.github.javaparser.ast.visitor.ModifierVisitorAdapter;
 /**
  * Generates the test sources by first generating the round trip path tree, then using it to generate test cases.
  *
- * @see RoundTripPathTree
+ * @see RoundTripPathTreeNode
  */
 public class StateTestGenerator {
     /**
@@ -29,17 +29,17 @@ public class StateTestGenerator {
      */
     public static void generate(String outputPath) {
         final StateMachine machine = StateMachine.getInstance();
-        final RoundTripPathTree tree = RoundTripPathTree.build(machine.getStartState());
+        final RoundTripPathTreeNode tree = RoundTripPathTreeNode.build(machine.getStartState());
         System.out.println(tree.toString());
         visitTree(tree);
     }
 
-    private static void visitTree(RoundTripPathTree tree) {
-        if (!tree.isAlpha()) {
-            System.out.println(conditionAsExpression(tree.getTransition().getCondition()));
-            System.out.println(actionAsStatements(tree.getTransition().getAction()));
+    private static void visitTree(RoundTripPathTreeNode node) {
+        if (!node.isAlpha()) {
+            System.out.println(conditionAsExpression(node.getTransition().getCondition()));
+            System.out.println(actionAsStatements(node.getTransition().getAction()));
         }
-        for (RoundTripPathTree subTree : tree.getChildren()) {
+        for (RoundTripPathTreeNode subTree : node.getChildren()) {
             visitTree(subTree);
         }
     }
