@@ -35,6 +35,11 @@ public class StateMachine
     transitions = new ArrayList<Transition>();
   }
 
+  public static void setInstance(StateMachine instance)
+  {
+    theInstance = instance;
+  }
+
   public static StateMachine getInstance()
   {
     if(theInstance == null)

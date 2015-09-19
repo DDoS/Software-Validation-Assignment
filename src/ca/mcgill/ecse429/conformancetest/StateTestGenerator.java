@@ -1,10 +1,13 @@
 package ca.mcgill.ecse429.conformancetest;
 
+import ca.mcgill.ecse429.conformancetest.statemodel.StateMachine;
+
 /**
  *
  */
 public class StateTestGenerator {
     public static void generate(String outputPath) {
-        System.out.println(outputPath);
+        final StateMachine machine = StateMachine.getInstance();
+        System.out.println(machine);
     }
 }
