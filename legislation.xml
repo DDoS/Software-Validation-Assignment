@@ -71,15 +71,15 @@
     </transition>
     <transition id="16">
       <event>votePasses</event>
-      <condition></condition>
-      <action>!getIsCommonsBill()</action>
+      <condition>!getIsCommonsBill()</condition>
+      <action></action>
       <from reference="6"/>
       <to reference="5"/>
     </transition>
     <transition id="17">
       <event>votePasses</event>
-      <condition></condition>
-      <action>getIsCommonsBill()</action>
+      <condition>getIsCommonsBill()</condition>
+      <action></action>
       <from reference="6"/>
       <to reference="7"/>
     </transition>

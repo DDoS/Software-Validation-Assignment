@@ -34,6 +34,15 @@ public class RoundTripPathTree {
     }
 
     /**
+     * Returns true if this is an alpha node. Such a node has a null transition and state.
+     *
+     * @return Whether this is an alpha node
+     */
+    public boolean isAlpha() {
+        return transition == null;
+    }
+
+    /**
      * Returns the state for this node. A null state represents the alpha state.
      *
      * @return The state
