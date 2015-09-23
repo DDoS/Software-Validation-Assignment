@@ -1,13 +1,12 @@
 package ca.mcgill.ecse429.conformancetest.statemodel.persistence;
 
-import com.thoughtworks.xstream.XStream;
-
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class
-		 PersistenceXStream {
+import com.thoughtworks.xstream.XStream;
+
+public class PersistenceXStream {
 
 	private static XStream xstream = new XStream();
 	private static String filename = "data.xml";
@@ -30,7 +29,7 @@ public class
 	public static Object loadFromXMLwithXStream() {
 		xstream.setMode(XStream.ID_REFERENCES);
 		try {
-			FileReader fileReader = new FileReader(filename); // load our xml file  
+			FileReader fileReader = new FileReader(filename); // load our xml file
 			return xstream.fromXML(fileReader);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -41,9 +40,9 @@ public class
 	public static void setAlias(String xmlTagName, Class<?> className) {
 		xstream.alias(xmlTagName, className);
 	}
-	
+
 	public static void setFilename(String fn) {
-		filename = fn; 
+		filename = fn;
 	}
 
 }

@@ -81,7 +81,7 @@
       <to reference="4"/>
     </transition>
     <transition id="17">
-      <event>add</event>
+      <event>addQtr</event>
       <condition></condition>
       <action>curQtrs = curQtrs + 1;</action>
       <from reference="6"/>

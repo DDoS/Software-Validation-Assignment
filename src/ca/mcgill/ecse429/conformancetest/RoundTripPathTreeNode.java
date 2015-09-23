@@ -1,14 +1,17 @@
 package ca.mcgill.ecse429.conformancetest;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import ca.mcgill.ecse429.conformancetest.statemodel.State;
 import ca.mcgill.ecse429.conformancetest.statemodel.StateMachine;
 import ca.mcgill.ecse429.conformancetest.statemodel.Transition;
 
-import java.util.*;
-
 /**
- * Represents a node in a round trip path tree for a state machine.
- * includes the transition into obj and the list of children RTTs
+ * Represents a node in a round trip path tree for a state machine. includes the transition into obj and the list of children RTTs
  */
 public class RoundTripPathTreeNode {
     private final Transition transition;
@@ -77,7 +80,7 @@ public class RoundTripPathTreeNode {
         for (int i = 0; i < level; i++) {
             builder.append("    ");
         }
-        if (transition == null) {
+        if (isAlpha()) {
             builder.append("alpha\n");
         } else {
             builder.append(transition.getEvent())
@@ -106,7 +109,7 @@ public class RoundTripPathTreeNode {
         return new RoundTripPathTreeNode(buildChildren(from, visited));
     }
 
-    /**
+    /*
      * builds the children for a particular state.
      * The visited states should contain all states in the parent tree.
      */
@@ -128,9 +131,9 @@ public class RoundTripPathTreeNode {
         return children;
     }
 
-    /**
+    /*
      * Gets all the transitions that have this state as the from state.
-      */
+     */
     private static List<Transition> getTransitionsFrom(State state) {
         final List<Transition> from = new ArrayList<Transition>();
 

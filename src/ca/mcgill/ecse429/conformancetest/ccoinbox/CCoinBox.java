@@ -159,7 +159,12 @@ public class CCoinBox
         setState(State.empty);
         wasEventProcessed = true;
         break;
-      case notAllowed: //same as allowed
+      case notAllowed:
+        totalQtrs = 0;
+        curQtrs = 0;
+        setState(State.empty);
+        wasEventProcessed = true;
+        break;
       case allowed:
         totalQtrs = 0;
         curQtrs = 0;
