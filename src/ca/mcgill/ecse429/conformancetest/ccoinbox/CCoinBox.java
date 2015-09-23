@@ -113,6 +113,7 @@ public class CCoinBox
         wasEventProcessed = true;
         break;
       default:
+        //unreachable for 3 states
         // Other states do respond to this event
     }
 
@@ -126,7 +127,8 @@ public class CCoinBox
     State aState = state;
     switch (aState)
     {
-      case empty:
+      case empty: //same as allowed
+      case allowed:
         curQtrs = curQtrs + 1;
         setState(State.notAllowed);
         wasEventProcessed = true;
@@ -137,11 +139,7 @@ public class CCoinBox
         setState(State.allowed);
         wasEventProcessed = true;
         break;
-      case allowed:
-        curQtrs = curQtrs + 1;
-        setState(State.notAllowed);
-        wasEventProcessed = true;
-        break;
+
       default:
         // Other states do respond to this event
     }
@@ -161,12 +159,7 @@ public class CCoinBox
         setState(State.empty);
         wasEventProcessed = true;
         break;
-      case notAllowed:
-        totalQtrs = 0;
-        curQtrs = 0;
-        setState(State.empty);
-        wasEventProcessed = true;
-        break;
+      case notAllowed: //same as allowed
       case allowed:
         totalQtrs = 0;
         curQtrs = 0;

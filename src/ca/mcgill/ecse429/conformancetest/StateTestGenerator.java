@@ -1,20 +1,16 @@
 package ca.mcgill.ecse429.conformancetest;
 
-import java.util.Collections;
-import java.util.List;
-
 import ca.mcgill.ecse429.conformancetest.statemodel.StateMachine;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseException;
 import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.expr.AssignExpr;
-import com.github.javaparser.ast.expr.BooleanLiteralExpr;
-import com.github.javaparser.ast.expr.Expression;
-import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.visitor.ModifierVisitorAdapter;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Generates the test sources by first generating the round trip path tree, then using it to generate test cases.
@@ -31,7 +27,10 @@ public class StateTestGenerator {
         final StateMachine machine = StateMachine.getInstance();
         final RoundTripPathTreeNode tree = RoundTripPathTreeNode.build(machine.getStartState());
         System.out.println(tree.toString());
+
         visitTree(tree);
+
+        //TODO code not generated
     }
 
     private static void visitTree(RoundTripPathTreeNode node) {

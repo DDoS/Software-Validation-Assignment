@@ -1,17 +1,14 @@
 package ca.mcgill.ecse429.conformancetest;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import ca.mcgill.ecse429.conformancetest.statemodel.State;
 import ca.mcgill.ecse429.conformancetest.statemodel.StateMachine;
 import ca.mcgill.ecse429.conformancetest.statemodel.Transition;
 
+import java.util.*;
+
 /**
  * Represents a node in a round trip path tree for a state machine.
+ * includes the transition into obj and the list of children RTTs
  */
 public class RoundTripPathTreeNode {
     private final Transition transition;
@@ -48,7 +45,7 @@ public class RoundTripPathTreeNode {
      * @return The state
      */
     public State getState() {
-        return transition == null ? null : transition.getTo();
+        return isAlpha() ? null : transition.getTo();
     }
 
     /**
@@ -109,10 +106,14 @@ public class RoundTripPathTreeNode {
         return new RoundTripPathTreeNode(buildChildren(from, visited));
     }
 
-    // Builds the children for a particular state. The visited states should contain all states in the parent tree.
+    /**
+     * builds the children for a particular state.
+     * The visited states should contain all states in the parent tree.
+     */
     private static List<RoundTripPathTreeNode> buildChildren(State from, Set<State> visited) {
         final List<RoundTripPathTreeNode> children = new ArrayList<RoundTripPathTreeNode>();
         final List<Transition> transitions = getTransitionsFrom(from);
+
         for (final Transition transition : transitions) {
             final State to = transition.getTo();
             if (visited.contains(to)) {
@@ -127,9 +128,12 @@ public class RoundTripPathTreeNode {
         return children;
     }
 
-    // Gets all the transitions that have this state as the from state.
+    /**
+     * Gets all the transitions that have this state as the from state.
+      */
     private static List<Transition> getTransitionsFrom(State state) {
         final List<Transition> from = new ArrayList<Transition>();
+
         for (Transition transition : StateMachine.getInstance().getTransitions()) {
             if (transition.getFrom().equals(state)) {
                 from.add(transition);
