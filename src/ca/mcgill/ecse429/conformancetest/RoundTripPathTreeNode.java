@@ -116,7 +116,6 @@ public class RoundTripPathTreeNode {
     private static List<RoundTripPathTreeNode> buildChildren(State from, Set<State> visited) {
         final List<RoundTripPathTreeNode> children = new ArrayList<RoundTripPathTreeNode>();
         final List<Transition> transitions = getTransitionsFrom(from);
-
         for (final Transition transition : transitions) {
             final State to = transition.getTo();
             if (visited.contains(to)) {
@@ -136,7 +135,6 @@ public class RoundTripPathTreeNode {
      */
     private static List<Transition> getTransitionsFrom(State state) {
         final List<Transition> from = new ArrayList<Transition>();
-
         for (Transition transition : StateMachine.getInstance().getTransitions()) {
             if (transition.getFrom().equals(state)) {
                 from.add(transition);
