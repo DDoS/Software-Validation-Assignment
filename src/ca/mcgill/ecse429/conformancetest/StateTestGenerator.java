@@ -1,21 +1,29 @@
 package ca.mcgill.ecse429.conformancetest;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseException;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.PackageDeclaration;
+import com.github.javaparser.ast.body.BodyDeclaration;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.ModifierSet;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.body.VariableDeclaratorId;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.BinaryExpr.Operator;
-import com.github.javaparser.ast.expr.BooleanLiteralExpr;
 import com.github.javaparser.ast.expr.ConditionalExpr;
 import com.github.javaparser.ast.expr.EnclosedExpr;
 import com.github.javaparser.ast.expr.Expression;
@@ -33,11 +41,16 @@ import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.ThrowStmt;
 import com.github.javaparser.ast.stmt.WhileStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.PrimitiveType;
+import com.github.javaparser.ast.type.PrimitiveType.Primitive;
+import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.VoidType;
 import com.github.javaparser.ast.visitor.ModifierVisitorAdapter;
 
 import ca.mcgill.ecse429.conformancetest.statemodel.StateMachine;
 import ca.mcgill.ecse429.conformancetest.statemodel.Transition;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * Generates the test sources by first generating the round trip path tree, then using it to generate test cases.
@@ -53,16 +66,19 @@ public class StateTestGenerator {
     public static void generate(String outputPath) {
         final StateMachine machine = StateMachine.getInstance();
         final RoundTripPathTreeNode tree = RoundTripPathTreeNode.build(machine.getStartState());
-        System.out.println(tree);
-        final List<MethodDeclaration> methods = generateTestMethods(tree);
-        for (MethodDeclaration method : methods) {
-            System.out.println(method);
-        }
+        final List<BodyDeclaration> methods = generateTestMethods(tree);
+        final String className = getClassName(outputPath.substring(outputPath.lastIndexOf('/') + 1));
+        final ClassOrInterfaceDeclaration testClass = new ClassOrInterfaceDeclaration(ModifierSet.PUBLIC, false, className);
+        testClass.setMembers(methods);
+        final CompilationUnit file = new CompilationUnit(new PackageDeclaration(new NameExpr(machine.getPackageName())),
+                generateImports(Assert.class, Test.class), Collections.<TypeDeclaration>singletonList(testClass)
+        );
+        System.out.println(file);
     }
 
-    private static List<MethodDeclaration> generateTestMethods(RoundTripPathTreeNode node) {
+    private static List<BodyDeclaration> generateTestMethods(RoundTripPathTreeNode node) {
         final List<BlockStmt> bodies = generateTestBodies(node);
-        final List<MethodDeclaration> methods = new ArrayList<MethodDeclaration>();
+        final List<BodyDeclaration> methods = new ArrayList<BodyDeclaration>();
         int i = 0;
         for (BlockStmt body : bodies) {
             final MethodDeclaration method = new MethodDeclaration(ModifierSet.PUBLIC, new VoidType(),
@@ -80,20 +96,28 @@ public class StateTestGenerator {
         }
         final BlockStmt body = new BlockStmt(new ArrayList<Statement>());
         final List<BlockStmt> bodies = new ArrayList<BlockStmt>();
+        final Map<String, Integer> usedVarNames = new HashMap<String, Integer>();
         // Don't pass the alpha node, but the children
         for (RoundTripPathTreeNode child : node.getChildren()) {
-            generateTestBodies(child, body, bodies);
+            generateTestBodies(child, body, bodies, usedVarNames);
         }
         return bodies;
     }
 
-    private static void generateTestBodies(RoundTripPathTreeNode node, BlockStmt body, List<BlockStmt> bodies) {
+    private static void generateTestBodies(RoundTripPathTreeNode node, BlockStmt body, List<BlockStmt> bodies, Map<String, Integer> usedVarNames) {
         final List<Statement> statements = body.getStmts();
         final Transition transition = node.getTransition();
         if (!transition.getCondition().isEmpty()) {
             statements.add(generateConditionReacher(transition.getCondition()));
         }
+        final List<ActionCheck> checks = generateActionChecks(transition.getAction(), usedVarNames);
+        for (ActionCheck check : checks) {
+            statements.addAll(check.getPre());
+        }
         statements.add(eventAsStatement(transition.getEvent()));
+        for (ActionCheck check : checks) {
+            statements.add(check.getPost());
+        }
         final List<RoundTripPathTreeNode> children = node.getChildren();
         if (children.isEmpty()) {
             // Reached leaf, test case is complete
@@ -101,8 +125,8 @@ public class StateTestGenerator {
         } else {
             // Generate the test statements for the next state transitions
             for (RoundTripPathTreeNode child : children) {
-                // Clone the body to ensure each test case has its own
-                generateTestBodies(child, (BlockStmt) body.clone(), bodies);
+                // Clone the body and used variable names to ensure each test case has its own
+                generateTestBodies(child, (BlockStmt) body.clone(), bodies, new HashMap<String, Integer>(usedVarNames));
             }
         }
     }
@@ -114,11 +138,26 @@ public class StateTestGenerator {
         return new WhileStmt(inverseCondition, new BlockStmt(Collections.<Statement>singletonList(missingBody)));
     }
 
+    private static List<ActionCheck> generateActionChecks(String action, Map<String, Integer> usedVarNames) {
+        final List<ActionCheck> checks = new ArrayList<ActionCheck>();
+        final List<Statement> statements = actionAsStatements(action);
+        for (Statement statement : statements) {
+            if (!(statement instanceof ExpressionStmt)) {
+                continue;
+            }
+            final Expression expression = ((ExpressionStmt) statement).getExpression();
+            if (!(expression instanceof AssignExpr)) {
+                continue;
+            }
+            checks.add(new ActionCheck((AssignExpr) expression, usedVarNames));
+        }
+        return checks;
+    }
+
     private static Statement eventAsStatement(String event) {
         final Expression expression;
         if ("@ctor".equals(event)) {
-            String className = StateMachine.getInstance().getClassName();
-            className = className.substring(0, className.lastIndexOf(".java"));
+            String className = getMachineClassName();
             final ClassOrInterfaceType type = new ClassOrInterfaceType(className);
             final ObjectCreationExpr constructor = new ObjectCreationExpr(null, type, Collections.<Expression>emptyList());
             expression = new VariableDeclarationExpr(ModifierSet.FINAL, type,
@@ -131,7 +170,7 @@ public class StateTestGenerator {
 
     private static Expression conditionAsExpression(String condition) {
         if (condition.isEmpty()) {
-            return new BooleanLiteralExpr(true);
+            return null;
         }
         try {
             final Expression expression = JavaParser.parseExpression(condition);
@@ -201,6 +240,132 @@ public class StateTestGenerator {
         return expression;
     }
 
+    private static Expression generateAssert(Expression check) {
+        return new MethodCallExpr(new NameExpr("Assert"), "assertTrue", Collections.singletonList(check));
+    }
+
+    private static List<ImportDeclaration> generateImports(Class<?>... classes) {
+        final List<ImportDeclaration> imports = new ArrayList<ImportDeclaration>();
+        for (Class<?> _class : classes) {
+            imports.add(new ImportDeclaration(new NameExpr(_class.getCanonicalName()), false, false));
+        }
+        return imports;
+    }
+
+    private static String getMachineClassName() {
+        return getClassName(StateMachine.getInstance().getClassName());
+    }
+
+    private static String getClassName(String javaFileName) {
+        return javaFileName.substring(0, javaFileName.lastIndexOf(".java"));
+    }
+
+    private static String capitalize(String string) {
+        return Character.toUpperCase(string.charAt(0)) + string.substring(1);
+    }
+
+    private static String uncapitalize(String string) {
+        return Character.toLowerCase(string.charAt(0)) + string.substring(1);
+    }
+
+    private static class ActionCheck {
+        private final List<Statement> pre = new ArrayList<Statement>();
+        private final Statement post;
+
+        private ActionCheck(AssignExpr action, Map<String, Integer> usedVarNames) {
+            final Expression value = (Expression) action.getValue().accept(new PreStateExtractor(usedVarNames), pre);
+            post = new ExpressionStmt(generateAssert(new BinaryExpr(action.getTarget(), value, Operator.equals)));
+        }
+
+        private List<Statement> getPre() {
+            return pre;
+        }
+
+        private Statement getPost() {
+            return post;
+        }
+    }
+
+    private static class PreStateExtractor extends ModifierVisitorAdapter<List<Statement>> {
+        private final Map<String, Integer> usedVarNames;
+
+        private PreStateExtractor(Map<String, Integer> usedVarNames) {
+            this.usedVarNames = usedVarNames;
+        }
+
+        @Override
+        public Node visit(MethodCallExpr call, List<Statement> preStates) {
+            // Look for a call to a machine property getter
+            final Expression scope = call.getScope();
+            if (!(scope instanceof NameExpr)) {
+                return super.visit(call, preStates);
+            }
+            final NameExpr nameExpr = (NameExpr) scope;
+            if (!nameExpr.getName().equals(FieldToAccessor.SCOPE.getName())) {
+                return super.visit(call, preStates);
+            }
+            // Create variable declaration in pre-state with value set to the call
+            final String callName = call.getName();
+            final int argCount = call.getArgs() == null ? 0 : call.getArgs().size();
+            final String varName = methodToVarName(callName);
+            final VariableDeclarationExpr preState = new VariableDeclarationExpr(ModifierSet.FINAL, getReturnType(callName, argCount),
+                    Collections.singletonList(new VariableDeclarator(new VariableDeclaratorId(varName), call)));
+            preStates.add(new ExpressionStmt(preState));
+            // Replace call by reference to the variable
+            return new NameExpr(varName);
+        }
+
+        private String methodToVarName(String name) {
+            if (name.startsWith("get")) {
+                name = uncapitalize(name.substring(3));
+            }
+            // Make variable names unique when reusing
+            Integer count = usedVarNames.get(name);
+            if (count == null) {
+                usedVarNames.put(name, 0);
+            } else {
+                usedVarNames.put(name, ++count);
+                name = name + count;
+            }
+            return name;
+        }
+
+        private static Type getReturnType(String methodName, int paramCount) {
+            try {
+                final Class<?> _class = Class.forName(StateMachine.getInstance().getPackageName() + "." + getMachineClassName());
+                final Method[] methods = _class.getMethods();
+                Type match = null;
+                for (Method method : methods) {
+                    if (method.getName().equals(methodName)) {
+                        final int count = method.getParameterTypes().length;
+                        if (method.isVarArgs() ? count <= paramCount : count == paramCount) {
+                            if (match != null) {
+                                // Overload conflict, would be hard to resolve, just give up
+                                return new ClassOrInterfaceType("FixMeType");
+                            }
+                            final Class<?> returnType = method.getReturnType();
+                            if (returnType == void.class) {
+                                throw new IllegalStateException("Getter shouldn't be returning void: " + methodName);
+                            }
+                            match = fromClass(returnType);
+                        }
+                    }
+                }
+                return match;
+            } catch (ClassNotFoundException exception) {
+                throw new RuntimeException("Expected state machine class to be in classpath", exception);
+            }
+        }
+
+        private static Type fromClass(Class<?> _class) {
+            final String name = _class.getSimpleName();
+            if (_class.isPrimitive()) {
+                return new PrimitiveType(Primitive.valueOf(capitalize(name)));
+            }
+            return new ClassOrInterfaceType(name);
+        }
+    }
+
     private static class FieldToAccessor extends ModifierVisitorAdapter<Object> {
         private static final FieldToAccessor INSTANCE = new FieldToAccessor();
         private static final NameExpr SCOPE = new NameExpr("machine");
@@ -213,25 +378,7 @@ public class StateTestGenerator {
 
         @Override
         public Node visit(NameExpr name, Object arg) {
-            if (!(name.getParentNode() instanceof AssignExpr)) {
-                return new MethodCallExpr(SCOPE, "get" + capitalize(name.getName()));
-            }
-            return name;
-        }
-
-        @Override
-        public Node visit(AssignExpr assign, Object arg) {
-            final Expression target = assign.getTarget();
-            if (target instanceof NameExpr) {
-                final NameExpr name = (NameExpr) target;
-                final Expression value = (Expression) assign.getValue().accept(this, arg);
-                return new MethodCallExpr(SCOPE, "set" + capitalize(name.getName()), Collections.singletonList(value));
-            }
-            return super.visit(assign, arg);
-        }
-
-        private static String capitalize(String string) {
-            return Character.toUpperCase(string.charAt(0)) + string.substring(1);
+            return new MethodCallExpr(SCOPE, "get" + capitalize(name.getName()));
         }
     }
 }
