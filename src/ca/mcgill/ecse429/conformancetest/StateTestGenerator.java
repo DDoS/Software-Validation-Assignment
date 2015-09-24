@@ -10,14 +10,20 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.ModifierSet;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.body.VariableDeclaratorId;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.BooleanLiteralExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.VoidType;
 import com.github.javaparser.ast.visitor.ModifierVisitorAdapter;
 
@@ -37,6 +43,7 @@ public class StateTestGenerator {
     public static void generate(String outputPath) {
         final StateMachine machine = StateMachine.getInstance();
         final RoundTripPathTreeNode tree = RoundTripPathTreeNode.build(machine.getStartState());
+        System.out.println(tree);
         final List<MethodDeclaration> methods = generateTestMethods(tree);
         for (MethodDeclaration method : methods) {
             System.out.println(method);
@@ -70,8 +77,7 @@ public class StateTestGenerator {
     }
 
     private static void generateTestBodies(RoundTripPathTreeNode node, BlockStmt body, List<BlockStmt> bodies) {
-        // TODO: generate test statements for the node here and store them in the body. This is just a test:
-        // body.getStmts().add(new ExpressionStmt(new MethodCallExpr(null, node.getState().getName())));
+        body.getStmts().add(eventAsStatement(node.getTransition().getEvent()));
         final List<RoundTripPathTreeNode> children = node.getChildren();
         if (children.isEmpty()) {
             // Reached leaf, test case is complete
@@ -83,6 +89,21 @@ public class StateTestGenerator {
                 generateTestBodies(child, (BlockStmt) body.clone(), bodies);
             }
         }
+    }
+
+    private static Statement eventAsStatement(String event) {
+        final Expression expression;
+        if ("@ctor".equals(event)) {
+            String className = StateMachine.getInstance().getClassName();
+            className = className.substring(0, className.lastIndexOf(".java"));
+            final ClassOrInterfaceType type = new ClassOrInterfaceType(className);
+            final ObjectCreationExpr constructor = new ObjectCreationExpr(null, type, Collections.<Expression>emptyList());
+            expression = new VariableDeclarationExpr(ModifierSet.FINAL, type,
+                    Collections.singletonList(new VariableDeclarator(new VariableDeclaratorId(FieldToAccessor.SCOPE.getName()), constructor)));
+        } else {
+            expression = new MethodCallExpr(FieldToAccessor.SCOPE, event, Collections.<Expression>emptyList());
+        }
+        return new ExpressionStmt(expression);
     }
 
     private static Expression conditionAsExpression(String condition) {
