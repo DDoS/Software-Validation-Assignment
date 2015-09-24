@@ -124,7 +124,8 @@ public class RoundTripPathTreeNode {
             } else {
                 // Not visited, mark as so and generate the children
                 visited.add(to);
-                children.add(new RoundTripPathTreeNode(transition, buildChildren(to, visited)));
+                // Clone the set do paths don't affect each other
+                children.add(new RoundTripPathTreeNode(transition, buildChildren(to, new HashSet<State>(visited))));
             }
         }
         return children;

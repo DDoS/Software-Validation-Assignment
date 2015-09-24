@@ -110,7 +110,7 @@ public class StateTestGenerator {
     private static Statement generateConditionReacher(String condition) {
         final Expression inverseCondition = invertCondition(conditionAsExpression(condition));
         final ThrowStmt missingBody = new ThrowStmt(new ObjectCreationExpr(null, new ClassOrInterfaceType(UnsupportedOperationException.class.getSimpleName()),
-                Collections.<Expression>singletonList(new StringLiteralExpr("Possible missing event for reaching condition: " + condition))));
+                Collections.<Expression>singletonList(new StringLiteralExpr("Missing event for reaching condition: " + condition))));
         return new WhileStmt(inverseCondition, new BlockStmt(Collections.<Statement>singletonList(missingBody)));
     }
 
