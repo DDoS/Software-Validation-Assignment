@@ -2,6 +2,7 @@ package ca.mcgill.ecse429.conformancetest;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -71,8 +72,7 @@ public class StateTestGenerator {
         final ClassOrInterfaceDeclaration testClass = new ClassOrInterfaceDeclaration(ModifierSet.PUBLIC, false, className);
         testClass.setMembers(methods);
         final CompilationUnit file = new CompilationUnit(new PackageDeclaration(new NameExpr(machine.getPackageName())),
-                generateImports(Assert.class, Test.class), Collections.<TypeDeclaration>singletonList(testClass)
-        );
+                generateImports(Assert.class, Test.class), Collections.<TypeDeclaration>singletonList(testClass));
         System.out.println(file);
     }
 
@@ -115,6 +115,7 @@ public class StateTestGenerator {
             statements.addAll(check.getPre());
         }
         statements.add(eventAsStatement(transition.getEvent()));
+        statements.add(generateStateCheck(transition.getTo().getName()));
         for (ActionCheck check : checks) {
             statements.add(check.getPost());
         }
@@ -152,6 +153,12 @@ public class StateTestGenerator {
             checks.add(new ActionCheck((AssignExpr) expression, usedVarNames));
         }
         return checks;
+    }
+
+    private static Statement generateStateCheck(String state) {
+        final MethodCallExpr stateGetter = new MethodCallExpr(FieldToAccessor.SCOPE, "getState", Collections.<Expression>emptyList());
+        final NameExpr stateValue = new NameExpr(getMachineClassName() + ".State." + state);
+        return generateAssert(stateValue, stateGetter);
     }
 
     private static Statement eventAsStatement(String event) {
@@ -240,8 +247,8 @@ public class StateTestGenerator {
         return expression;
     }
 
-    private static Expression generateAssert(Expression check) {
-        return new MethodCallExpr(new NameExpr("Assert"), "assertTrue", Collections.singletonList(check));
+    private static Statement generateAssert(Expression expected, Expression actual) {
+        return new ExpressionStmt(new MethodCallExpr(new NameExpr("Assert"), "assertEquals", Arrays.asList(expected, actual)));
     }
 
     private static List<ImportDeclaration> generateImports(Class<?>... classes) {
@@ -274,7 +281,7 @@ public class StateTestGenerator {
 
         private ActionCheck(AssignExpr action, Map<String, Integer> usedVarNames) {
             final Expression value = (Expression) action.getValue().accept(new PreStateExtractor(usedVarNames), pre);
-            post = new ExpressionStmt(generateAssert(new BinaryExpr(action.getTarget(), value, Operator.equals)));
+            post = generateAssert(value, action.getTarget());
         }
 
         private List<Statement> getPre() {
