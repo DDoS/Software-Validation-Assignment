@@ -13,21 +13,31 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.body.VariableDeclaratorId;
 import com.github.javaparser.ast.expr.AssignExpr;
+import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.BinaryExpr.Operator;
 import com.github.javaparser.ast.expr.BooleanLiteralExpr;
+import com.github.javaparser.ast.expr.ConditionalExpr;
+import com.github.javaparser.ast.expr.EnclosedExpr;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.InstanceOfExpr;
 import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.StringLiteralExpr;
+import com.github.javaparser.ast.expr.UnaryExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.stmt.ThrowStmt;
+import com.github.javaparser.ast.stmt.WhileStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.VoidType;
 import com.github.javaparser.ast.visitor.ModifierVisitorAdapter;
 
 import ca.mcgill.ecse429.conformancetest.statemodel.StateMachine;
+import ca.mcgill.ecse429.conformancetest.statemodel.Transition;
 
 /**
  * Generates the test sources by first generating the round trip path tree, then using it to generate test cases.
@@ -55,7 +65,8 @@ public class StateTestGenerator {
         final List<MethodDeclaration> methods = new ArrayList<MethodDeclaration>();
         int i = 0;
         for (BlockStmt body : bodies) {
-            final MethodDeclaration method = new MethodDeclaration(ModifierSet.PUBLIC, new VoidType(), "conformanceTest" + i++, Collections.<Parameter>emptyList());
+            final MethodDeclaration method = new MethodDeclaration(ModifierSet.PUBLIC, new VoidType(),
+                    "conformanceTest" + i++, Collections.<Parameter>emptyList());
             method.getAnnotations().add(new MarkerAnnotationExpr(new NameExpr("Test")));
             method.setBody(body);
             methods.add(method);
@@ -77,7 +88,12 @@ public class StateTestGenerator {
     }
 
     private static void generateTestBodies(RoundTripPathTreeNode node, BlockStmt body, List<BlockStmt> bodies) {
-        body.getStmts().add(eventAsStatement(node.getTransition().getEvent()));
+        final List<Statement> statements = body.getStmts();
+        final Transition transition = node.getTransition();
+        if (!transition.getCondition().isEmpty()) {
+            statements.add(generateConditionReacher(transition.getCondition()));
+        }
+        statements.add(eventAsStatement(transition.getEvent()));
         final List<RoundTripPathTreeNode> children = node.getChildren();
         if (children.isEmpty()) {
             // Reached leaf, test case is complete
@@ -89,6 +105,13 @@ public class StateTestGenerator {
                 generateTestBodies(child, (BlockStmt) body.clone(), bodies);
             }
         }
+    }
+
+    private static Statement generateConditionReacher(String condition) {
+        final Expression inverseCondition = invertCondition(conditionAsExpression(condition));
+        final ThrowStmt missingBody = new ThrowStmt(new ObjectCreationExpr(null, new ClassOrInterfaceType(UnsupportedOperationException.class.getSimpleName()),
+                Collections.<Expression>singletonList(new StringLiteralExpr("Possible missing event for reaching condition: " + condition))));
+        return new WhileStmt(inverseCondition, new BlockStmt(Collections.<Statement>singletonList(missingBody)));
     }
 
     private static Statement eventAsStatement(String event) {
@@ -130,6 +153,52 @@ public class StateTestGenerator {
         } catch (ParseException exception) {
             throw new RuntimeException(exception);
         }
+    }
+
+    private static Expression invertCondition(Expression expression) {
+        if (expression instanceof UnaryExpr) {
+            final UnaryExpr unary = (UnaryExpr) expression;
+            if (unary.getOperator() == UnaryExpr.Operator.not) {
+                expression = unary.getExpr();
+            } else {
+                expression = new UnaryExpr(expression, UnaryExpr.Operator.not);
+            }
+        } else if (expression instanceof BinaryExpr) {
+            final BinaryExpr binary = (BinaryExpr) expression;
+            final Operator inverted;
+            switch (binary.getOperator()) {
+                case equals:
+                    inverted = Operator.notEquals;
+                    break;
+                case notEquals:
+                    inverted = Operator.equals;
+                    break;
+                case less:
+                    inverted = Operator.greaterEquals;
+                    break;
+                case greater:
+                    inverted = Operator.lessEquals;
+                    break;
+                case lessEquals:
+                    inverted = Operator.greater;
+                    break;
+                case greaterEquals:
+                    inverted = Operator.less;
+                    break;
+                case or:
+                    return new BinaryExpr(invertCondition(binary.getLeft()), invertCondition(binary.getRight()), Operator.and);
+                case and:
+                    return new BinaryExpr(invertCondition(binary.getLeft()), invertCondition(binary.getRight()), Operator.or);
+                default:
+                    return new UnaryExpr(new EnclosedExpr(binary), UnaryExpr.Operator.not);
+            }
+            return new BinaryExpr(binary.getLeft(), binary.getRight(), inverted);
+        } else if (expression instanceof AssignExpr || expression instanceof ConditionalExpr || expression instanceof InstanceOfExpr) {
+            return new UnaryExpr(new EnclosedExpr(expression), UnaryExpr.Operator.not);
+        } else {
+            return new UnaryExpr(expression, UnaryExpr.Operator.not);
+        }
+        return expression;
     }
 
     private static class FieldToAccessor extends ModifierVisitorAdapter<Object> {
