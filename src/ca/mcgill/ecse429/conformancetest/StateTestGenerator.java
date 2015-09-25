@@ -63,18 +63,17 @@ public class StateTestGenerator {
     /**
      * Generates the test cases for the state machine in {@link StateMachine#getInstance()} and writes the file to the given output path.
      *
-     * @param outputPath Where to write the test cases
+     * @param outputClassName The simple name of the generate class containing the generated test cases
      */
-    public static void generate(String outputPath) {
+    public static String generate(String outputClassName) {
         final StateMachine machine = StateMachine.getInstance();
         final RoundTripPathTreeNode tree = RoundTripPathTreeNode.build(machine.getStartState());
         final List<BodyDeclaration> methods = generateTestMethods(tree);
-        final String className = getClassName(outputPath.substring(outputPath.lastIndexOf('/') + 1));
-        final ClassOrInterfaceDeclaration testClass = new ClassOrInterfaceDeclaration(ModifierSet.PUBLIC, false, className);
+        final ClassOrInterfaceDeclaration testClass = new ClassOrInterfaceDeclaration(ModifierSet.PUBLIC, false, outputClassName);
         testClass.setMembers(methods);
         final CompilationUnit file = new CompilationUnit(new PackageDeclaration(new NameExpr(machine.getPackageName())),
                 generateImports(Assert.class, Test.class), Collections.<TypeDeclaration>singletonList(testClass));
-        System.out.println(file);
+        return file.toString();
     }
 
     private static List<BodyDeclaration> generateTestMethods(RoundTripPathTreeNode node) {
