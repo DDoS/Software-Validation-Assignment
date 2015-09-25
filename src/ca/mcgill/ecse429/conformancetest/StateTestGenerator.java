@@ -22,6 +22,7 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.body.VariableDeclaratorId;
+import com.github.javaparser.ast.comments.LineComment;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.BinaryExpr.Operator;
@@ -107,8 +108,13 @@ public class StateTestGenerator {
     private static void generateTestBodies(RoundTripPathTreeNode node, BlockStmt body, List<BlockStmt> bodies, Map<String, Integer> usedVarNames) {
         final List<Statement> statements = body.getStmts();
         final Transition transition = node.getTransition();
+        final LineComment comment = new LineComment(" " + node.getSignature());
+        boolean commentAdded = false;
         if (!transition.getCondition().isEmpty()) {
-            statements.add(generateConditionReacher(transition.getCondition()));
+            final Statement conditionReacher = generateConditionReacher(transition.getCondition());
+            conditionReacher.setComment(comment);
+            commentAdded = true;
+            statements.add(conditionReacher);
         }
         final List<ActionCheck> checks = generateActionChecks(transition.getAction(), usedVarNames);
         for (ActionCheck check : checks) {
@@ -117,7 +123,12 @@ public class StateTestGenerator {
         statements.add(eventAsStatement(transition.getEvent()));
         statements.add(generateStateCheck(transition.getTo().getName()));
         for (ActionCheck check : checks) {
-            statements.add(check.getPost());
+            final Statement post = check.getPost();
+            if (!commentAdded) {
+                post.setComment(comment);
+                commentAdded = true;
+            }
+            statements.add(post);
         }
         final List<RoundTripPathTreeNode> children = node.getChildren();
         if (children.isEmpty()) {
@@ -347,7 +358,7 @@ public class StateTestGenerator {
                         final int count = method.getParameterTypes().length;
                         if (method.isVarArgs() ? count <= paramCount : count == paramCount) {
                             if (match != null) {
-                                // Overload conflict, would be hard to resolve, just give up
+                                // Overload conflict, would be too hard to resolve, just give up
                                 return new ClassOrInterfaceType("FixMeType");
                             }
                             final Class<?> returnType = method.getReturnType();

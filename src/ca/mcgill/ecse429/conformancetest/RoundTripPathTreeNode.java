@@ -69,6 +69,19 @@ public class RoundTripPathTreeNode {
         return children;
     }
 
+    public String getSignature() {
+        final StringBuilder builder = new StringBuilder();
+        if (isAlpha()) {
+            builder.append("alpha [] / ; -> @ctor");
+        } else {
+            builder.append(transition.getEvent())
+                    .append(" [").append(transition.getCondition()).append(']')
+                    .append(" / ").append(transition.getAction().isEmpty() ? ";" : transition.getAction())
+                    .append(" -> ").append(transition.getTo().getName());
+        }
+        return builder.toString();
+    }
+
     @Override
     public String toString() {
         return toString(0);
@@ -80,15 +93,7 @@ public class RoundTripPathTreeNode {
         for (int i = 0; i < level; i++) {
             builder.append("    ");
         }
-        if (isAlpha()) {
-            builder.append("alpha\n");
-        } else {
-            builder.append(transition.getEvent())
-                    .append(" [").append(transition.getCondition()).append(']')
-                    .append(" / ").append(transition.getAction().isEmpty() ? ";" : transition.getAction())
-                    .append(" -> ").append(transition.getTo().getName())
-                    .append('\n');
-        }
+        builder.append(getSignature()).append('\n');
         for (RoundTripPathTreeNode child : children) {
             builder.append(child.toString(level + 1));
         }
