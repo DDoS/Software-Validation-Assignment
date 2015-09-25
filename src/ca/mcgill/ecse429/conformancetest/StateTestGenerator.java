@@ -30,6 +30,7 @@ import com.github.javaparser.ast.expr.ConditionalExpr;
 import com.github.javaparser.ast.expr.EnclosedExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.InstanceOfExpr;
+import com.github.javaparser.ast.expr.IntegerLiteralExpr;
 import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
@@ -172,6 +173,7 @@ public class StateTestGenerator {
     // This transforms actions that are assignments into one or two parts: if the action depends on a previous property value,
     // it generates a variable declaration that is initialized to the value before the said action. This is the "pre" statement.
     // The second "post" statement is the action converted to an assert that checks if the results are correct.
+    // Post and pre increments and decrements and compound assign operators are expanded to simple assigns
     private static List<ActionCheck> generateActionChecks(String action, Map<String, Integer> usedVarNames) {
         final List<ActionCheck> checks = new ArrayList<ActionCheck>();
         final List<Statement> statements = actionAsStatements(action);
@@ -180,14 +182,71 @@ public class StateTestGenerator {
             if (!(statement instanceof ExpressionStmt)) {
                 continue;
             }
-            final Expression expression = ((ExpressionStmt) statement).getExpression();
+            Expression expression = ((ExpressionStmt) statement).getExpression();
             if (!(expression instanceof AssignExpr)) {
-                continue;
+                // Check if this is actually a decrement or increment operator
+                if (expression instanceof UnaryExpr) {
+                    final UnaryExpr unary = (UnaryExpr) expression;
+                    final Operator operator;
+                    switch (unary.getOperator()) {
+                        case preDecrement:
+                        case posDecrement:
+                            operator = Operator.minus;
+                            break;
+                        case preIncrement:
+                        case posIncrement:
+                            operator = Operator.plus;
+                            break;
+                        default:
+                            continue;
+                    }
+                    // If this is the case, expand it and keep going
+                    final Expression target = unary.getExpr();
+                    expression = new AssignExpr(target, new BinaryExpr(target, new IntegerLiteralExpr("1"), operator), AssignExpr.Operator.assign);
+                } else {
+                    continue;
+                }
             }
-            // We've found one, generate the check code
-            checks.add(new ActionCheck((AssignExpr) expression, usedVarNames));
+            AssignExpr assign = (AssignExpr) expression;
+            if (assign.getOperator() != AssignExpr.Operator.assign) {
+                // This is a compound assign, so expand it to a simple assign
+                final Expression target = assign.getTarget();
+                assign = new AssignExpr(target, new BinaryExpr(target, new EnclosedExpr(assign.getValue()), getExpandedOperator(assign.getOperator())),
+                        AssignExpr.Operator.assign);
+            }
+            // Generate the check code for the assignment
+            checks.add(new ActionCheck(assign, usedVarNames));
         }
         return checks;
+    }
+
+    private static Operator getExpandedOperator(AssignExpr.Operator operator) {
+        switch (operator) {
+            case plus:
+                return Operator.plus;
+            case minus:
+                return Operator.minus;
+            case star:
+                return Operator.times;
+            case slash:
+                return Operator.divide;
+            case and:
+                return Operator.binAnd;
+            case or:
+                return Operator.binOr;
+            case xor:
+                return Operator.xor;
+            case rem:
+                return Operator.remainder;
+            case lShift:
+                return Operator.lShift;
+            case rSignedShift:
+                return Operator.rSignedShift;
+            case rUnsignedShift:
+                return Operator.rUnsignedShift;
+            default:
+                return null;
+        }
     }
 
     // This generates an assert that checks if the machine state is as expected
