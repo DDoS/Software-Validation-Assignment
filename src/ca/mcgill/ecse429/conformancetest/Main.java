@@ -20,27 +20,9 @@ public class Main {
             PersistenceStateMachine.loadStateMachine(stateMachineFilename);
             String result = StateTestGenerator.generate(generatedTestFileName);
 
-            //writeToFile(generatedTestFileName, result);
+            //write to file
+            generateFileWithName(generatedTestFileName, result);
 
-            //generate the path
-            String s1 = "package ";
-            String outPath = "src/" + result.substring(result.indexOf(s1) + s1.length() ,
-                    result.indexOf(";") ) ;
-            outPath = outPath.replaceAll("\\.", "/") + "/" +
-                    generatedTestFileName + ".java";
-
-            try {
-                String curr = new java.io.File(".").getCanonicalPath();
-                String absPath = curr + "/" + outPath ;
-
-                //write to file
-                writeToFile(absPath, result);
-
-
-                System.out.print("write to " + curr);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
 
         }
         else {
@@ -52,6 +34,34 @@ public class Main {
             return;
         }
 
+    }
+
+    /**
+     * write fileContent to a java file with the fileName located in the correct path based
+     * on the package name of the fileContent source
+     * @param fileName file name to write to
+     * @param fileContent content of the file
+     */
+    private static void generateFileWithName(String fileName, String fileContent) {
+        //generate the path
+        String s1 = "package ";
+        String outPath = "src/" + fileContent.substring(fileContent.indexOf(s1) + s1.length() ,
+                fileContent.indexOf(";") ) ;
+        outPath = outPath.replaceAll("\\.", "/") + "/" +
+                fileName + ".java";
+
+        try {
+            String curr = new File(".").getCanonicalPath();
+            String absPath = curr + "/" + outPath ;
+
+            //write to file
+            writeToFile(absPath, fileContent);
+
+
+            System.out.print("write to " + curr);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
