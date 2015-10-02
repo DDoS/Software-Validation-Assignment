@@ -5,6 +5,7 @@ import org.junit.Test;
 
 public class GeneratedTestCCoinBox {
 
+    //TODO rename this class and the place that generate class TestCCoinBox instead of GeneratedTestCCoinBox
     @Test
     public void conformanceTest0() {
         // @ctor [] / totalQtrs = 0; curQtrs = 0; allowVend = false; -> empty
