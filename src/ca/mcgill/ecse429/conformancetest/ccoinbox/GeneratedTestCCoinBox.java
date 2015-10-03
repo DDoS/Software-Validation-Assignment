@@ -171,7 +171,7 @@ public class GeneratedTestCCoinBox {
         Assert.assertEquals(true, machine.getAllowVend());
         // vend [curQtrs == 2] / totalQtrs = totalQtrs + 2; curQtrs = 0; allowVend = false; -> empty
         while (machine.getCurQtrs() != 2) {
-            throw new UnsupportedOperationException("Missing event for reaching condition: curQtrs == 2");
+            throw new UnsupportedOperationException("Manually add code here for reaching condition: curQtrs == 2");
         }
         final int totalQtrs = machine.getTotalQtrs();
         machine.vend();
@@ -202,7 +202,7 @@ public class GeneratedTestCCoinBox {
         Assert.assertEquals(true, machine.getAllowVend());
         // vend [curQtrs == 3] / totalQtrs = totalQtrs + 2; curQtrs = 1; allowVend = false; -> notAllowed
         while (machine.getCurQtrs() != 3) {
-            throw new UnsupportedOperationException("Missing event for reaching condition: curQtrs == 3");
+            throw new UnsupportedOperationException("Manually add code here for reaching condition: curQtrs == 3");
         }
         final int totalQtrs = machine.getTotalQtrs();
         machine.vend();
@@ -233,7 +233,7 @@ public class GeneratedTestCCoinBox {
         Assert.assertEquals(true, machine.getAllowVend());
         // vend [curQtrs > 3] / totalQtrs = totalQtrs + 2; curQtrs = curQtrs - 2; -> allowed
         while (machine.getCurQtrs() <= 3) {
-            throw new UnsupportedOperationException("Missing event for reaching condition: curQtrs > 3");
+            throw new UnsupportedOperationException("Manually add code here for reaching condition: curQtrs > 3");
         }
         final int totalQtrs = machine.getTotalQtrs();
         final int curQtrs2 = machine.getCurQtrs();
