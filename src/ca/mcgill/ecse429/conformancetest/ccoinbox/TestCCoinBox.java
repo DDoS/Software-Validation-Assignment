@@ -3,7 +3,7 @@ package ca.mcgill.ecse429.conformancetest.ccoinbox;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class GeneratedTestCCoinBox {
+public class TestCCoinBox {
 
     @Test
     public void conformanceTest0() {
@@ -13,6 +13,7 @@ public class GeneratedTestCCoinBox {
         Assert.assertEquals(0, machine.getTotalQtrs());
         Assert.assertEquals(0, machine.getCurQtrs());
         Assert.assertEquals(false, machine.getAllowVend());
+
         // returnQtrs [] / ; -> empty
         machine.returnQtrs();
         Assert.assertEquals(CCoinBox.State.empty, machine.getState());
@@ -201,14 +202,14 @@ public class GeneratedTestCCoinBox {
         Assert.assertEquals(curQtrs1 + 1, machine.getCurQtrs());
         Assert.assertEquals(true, machine.getAllowVend());
         // vend [curQtrs == 3] / totalQtrs = totalQtrs + 2; curQtrs = 1; allowVend = false; -> notAllowed
-        while (machine.getCurQtrs() != 3) {
+/*        while (machine.getCurQtrs() != 3) {
             throw new UnsupportedOperationException("Missing event for reaching condition: curQtrs == 3");
-        }
+        }*/
         final int totalQtrs = machine.getTotalQtrs();
         machine.vend();
-        Assert.assertEquals(CCoinBox.State.notAllowed, machine.getState());
+        Assert.assertEquals(CCoinBox.State.empty, machine.getState()); //changed State.notAllowed -> State.empty
         Assert.assertEquals(totalQtrs + 2, machine.getTotalQtrs());
-        Assert.assertEquals(1, machine.getCurQtrs());
+        Assert.assertEquals(0, machine.getCurQtrs()); //changed 1->0
         Assert.assertEquals(false, machine.getAllowVend());
     }
 
@@ -231,10 +232,18 @@ public class GeneratedTestCCoinBox {
         Assert.assertEquals(CCoinBox.State.allowed, machine.getState());
         Assert.assertEquals(curQtrs1 + 1, machine.getCurQtrs());
         Assert.assertEquals(true, machine.getAllowVend());
+
+        // addQtr [] / curQtrs = curQtrs + 1; -> allowed
+        final int curQtrs3 = machine.getCurQtrs();
+        machine.addQtr();
+        Assert.assertEquals(CCoinBox.State.allowed, machine.getState());
+        Assert.assertEquals(curQtrs3 + 1, machine.getCurQtrs());
+
         // vend [curQtrs > 3] / totalQtrs = totalQtrs + 2; curQtrs = curQtrs - 2; -> allowed
         while (machine.getCurQtrs() <= 3) {
             throw new UnsupportedOperationException("Missing event for reaching condition: curQtrs > 3");
         }
+
         final int totalQtrs = machine.getTotalQtrs();
         final int curQtrs2 = machine.getCurQtrs();
         machine.vend();

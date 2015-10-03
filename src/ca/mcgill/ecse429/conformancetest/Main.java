@@ -69,7 +69,7 @@ public class Main {
     private static String generateTestFileName() {
         StateMachine sm = StateMachine.getInstance();
         if (sm != null){ //sm initialized
-            return "Test" + sm.getClassName();
+            return "GeneratedTest" + sm.getClassName();
         }
         else {
             throw new RuntimeException("State Machine not initialized!");
