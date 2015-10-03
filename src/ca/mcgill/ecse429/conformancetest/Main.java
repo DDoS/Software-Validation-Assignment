@@ -20,6 +20,7 @@ public class Main {
             return;
         }
         if ("-r".equals(args[0])) {
+            // Run mode
             if (args.length <= 1) {
                 System.err.print("The program requires the fully qualified test class name when in \"run\" mode." +
                         " Example: ca.mcgill.ecse429.conformancetest.ccoinbox.TestCCoinBox");
@@ -33,6 +34,7 @@ public class Main {
             final Result result = JUnitCore.runClasses(testClass);
             printJUnitResult(result);
         } else {
+            // Generate mode
             final String modelPath = new File(args[0]).getAbsolutePath();
             PersistenceStateMachine.loadStateMachine(modelPath);
             final String className = generateTestClassName();
