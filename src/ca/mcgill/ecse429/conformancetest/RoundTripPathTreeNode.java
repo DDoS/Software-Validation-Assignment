@@ -11,7 +11,7 @@ import ca.mcgill.ecse429.conformancetest.statemodel.StateMachine;
 import ca.mcgill.ecse429.conformancetest.statemodel.Transition;
 
 /**
- * Represents a node in a round trip path tree for a state machine. includes the transition into obj and the list of children RTTs
+ * Represents a node in a round trip path tree for a state machine.
  */
 public class RoundTripPathTreeNode {
     private final Transition transition;
@@ -69,6 +69,11 @@ public class RoundTripPathTreeNode {
         return children;
     }
 
+    /**
+     * Returns a string that describes concisely the state and transition of this node, including events and conditions.
+     *
+     * @return The signature of the node
+     */
     public String getSignature() {
         final StringBuilder builder = new StringBuilder();
         if (isAlpha()) {
