@@ -193,18 +193,13 @@ public class TestCCoinBox {
         machine.addQtr();
         Assert.assertEquals(CCoinBox.State.notAllowed, machine.getState());
         Assert.assertEquals(curQtrs + 1, machine.getCurQtrs());
+
         // addQtr [] / curQtrs = curQtrs + 1; allowVend = true; -> allowed
         final int curQtrs1 = machine.getCurQtrs();
         machine.addQtr();
-        Assert.assertEquals(CCoinBox.State.allowed, machine.getState());
-        Assert.assertEquals(curQtrs1 + 1, machine.getCurQtrs());
-        Assert.assertEquals(true, machine.getAllowVend());
-
-        // addQtr [] / curQtrs = curQtrs + 1; allowVend = true; -> allowed
-        final int curQtrs3 = machine.getCurQtrs();
         machine.addQtr();
         Assert.assertEquals(CCoinBox.State.allowed, machine.getState());
-        Assert.assertEquals(curQtrs3 + 1, machine.getCurQtrs());
+        Assert.assertEquals(curQtrs1 + 2, machine.getCurQtrs());
         Assert.assertEquals(true, machine.getAllowVend());
 
         // vend [curQtrs == 3] / totalQtrs = totalQtrs + 2; curQtrs = 1; allowVend = false; -> notAllowed
@@ -232,21 +227,12 @@ public class TestCCoinBox {
         // addQtr [] / curQtrs = curQtrs + 1; allowVend = true; -> allowed
         final int curQtrs1 = machine.getCurQtrs();
         machine.addQtr();
+        machine.addQtr();
+        machine.addQtr();
         Assert.assertEquals(CCoinBox.State.allowed, machine.getState());
-        Assert.assertEquals(curQtrs1 + 1, machine.getCurQtrs());
+        Assert.assertEquals(curQtrs1 + 3, machine.getCurQtrs());
         Assert.assertEquals(true, machine.getAllowVend());
 
-        // addQtr [] / curQtrs = curQtrs + 1; -> allowed
-        final int curQtrs3 = machine.getCurQtrs();
-        machine.addQtr();
-        Assert.assertEquals(CCoinBox.State.allowed, machine.getState());
-        Assert.assertEquals(curQtrs3 + 1, machine.getCurQtrs());
-
-        // addQtr [] / curQtrs = curQtrs + 1; -> allowed
-        final int curQtrs4 = machine.getCurQtrs();
-        machine.addQtr();
-        Assert.assertEquals(CCoinBox.State.allowed, machine.getState());
-        Assert.assertEquals(curQtrs4 + 1, machine.getCurQtrs());
         // vend [curQtrs > 3] / totalQtrs = totalQtrs + 2; curQtrs = curQtrs - 2; -> allowed
 
         final int totalQtrs = machine.getTotalQtrs();
