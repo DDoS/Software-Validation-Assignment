@@ -220,6 +220,7 @@ public class StateTestGenerator {
         return checks;
     }
 
+    // This converts compound assign operators (such as +=) to the equivalent binary operator (+, for this example)
     private static Operator getExpandedOperator(AssignExpr.Operator operator) {
         switch (operator) {
             case plus:
