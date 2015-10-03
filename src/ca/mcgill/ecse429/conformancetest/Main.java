@@ -16,19 +16,19 @@ import org.junit.runner.notification.Failure;
 public class Main {
     public static void main(String[] args) {
         if (args.length <= 0) {
-            System.err.print("The program requires one argument as the name of the state machine file name. Example: ccoinbox.xml");
+            System.err.println("The program requires one argument as the name of the state machine file name. Example: ccoinbox.xml");
             return;
         }
         if ("-r".equals(args[0])) {
             // Run mode
             if (args.length <= 1) {
-                System.err.print("The program requires the fully qualified test class name when in \"run\" mode." +
+                System.err.println("The program requires the fully qualified test class name when in \"run\" mode." +
                         " Example: ca.mcgill.ecse429.conformancetest.ccoinbox.TestCCoinBox");
                 return;
             }
             final Class<?> testClass = getTestClass(args[1]);
             if (testClass == null) {
-                System.err.print("Class \"" + args[1] + "\" does not exist. Is the name fully qualified?");
+                System.err.println("Class \"" + args[1] + "\" does not exist. Is the name fully qualified?");
                 return;
             }
             final Result result = JUnitCore.runClasses(testClass);
