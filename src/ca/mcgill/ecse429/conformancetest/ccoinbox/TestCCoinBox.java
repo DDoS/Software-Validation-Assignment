@@ -4,7 +4,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class TestCCoinBox {
-
     @Test
     public void conformanceTest0() {
         // @ctor [] / totalQtrs = 0; curQtrs = 0; allowVend = false; -> empty
@@ -13,7 +12,6 @@ public class TestCCoinBox {
         Assert.assertEquals(0, machine.getTotalQtrs());
         Assert.assertEquals(0, machine.getCurQtrs());
         Assert.assertEquals(false, machine.getAllowVend());
-
         // returnQtrs [] / ; -> empty
         machine.returnQtrs();
         Assert.assertEquals(CCoinBox.State.empty, machine.getState());
@@ -171,7 +169,6 @@ public class TestCCoinBox {
         Assert.assertEquals(curQtrs1 + 1, machine.getCurQtrs());
         Assert.assertEquals(true, machine.getAllowVend());
         // vend [curQtrs == 2] / totalQtrs = totalQtrs + 2; curQtrs = 0; allowVend = false; -> empty
-
         final int totalQtrs = machine.getTotalQtrs();
         machine.vend();
         Assert.assertEquals(CCoinBox.State.empty, machine.getState());
@@ -193,16 +190,16 @@ public class TestCCoinBox {
         machine.addQtr();
         Assert.assertEquals(CCoinBox.State.notAllowed, machine.getState());
         Assert.assertEquals(curQtrs + 1, machine.getCurQtrs());
-
         // addQtr [] / curQtrs = curQtrs + 1; allowVend = true; -> allowed
         final int curQtrs1 = machine.getCurQtrs();
         machine.addQtr();
-        machine.addQtr();
         Assert.assertEquals(CCoinBox.State.allowed, machine.getState());
-        Assert.assertEquals(curQtrs1 + 2, machine.getCurQtrs());
+        Assert.assertEquals(curQtrs1 + 1, machine.getCurQtrs());
         Assert.assertEquals(true, machine.getAllowVend());
-
         // vend [curQtrs == 3] / totalQtrs = totalQtrs + 2; curQtrs = 1; allowVend = false; -> notAllowed
+        while (machine.getCurQtrs() != 3) {
+            machine.addQtr();
+        }
         final int totalQtrs = machine.getTotalQtrs();
         machine.vend();
         Assert.assertEquals(CCoinBox.State.notAllowed, machine.getState());
@@ -227,14 +224,13 @@ public class TestCCoinBox {
         // addQtr [] / curQtrs = curQtrs + 1; allowVend = true; -> allowed
         final int curQtrs1 = machine.getCurQtrs();
         machine.addQtr();
-        machine.addQtr();
-        machine.addQtr();
         Assert.assertEquals(CCoinBox.State.allowed, machine.getState());
-        Assert.assertEquals(curQtrs1 + 3, machine.getCurQtrs());
+        Assert.assertEquals(curQtrs1 + 1, machine.getCurQtrs());
         Assert.assertEquals(true, machine.getAllowVend());
-
         // vend [curQtrs > 3] / totalQtrs = totalQtrs + 2; curQtrs = curQtrs - 2; -> allowed
-
+        while (machine.getCurQtrs() <= 3) {
+            machine.addQtr();
+        }
         final int totalQtrs = machine.getTotalQtrs();
         final int curQtrs2 = machine.getCurQtrs();
         machine.vend();
