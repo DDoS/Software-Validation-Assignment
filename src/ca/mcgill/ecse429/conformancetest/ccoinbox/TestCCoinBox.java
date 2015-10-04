@@ -169,6 +169,7 @@ public class TestCCoinBox {
         Assert.assertEquals(curQtrs1 + 1, machine.getCurQtrs());
         Assert.assertEquals(true, machine.getAllowVend());
         // vend [curQtrs == 2] / totalQtrs = totalQtrs + 2; curQtrs = 0; allowVend = false; -> empty
+        // Removed unneeded condition check
         final int totalQtrs = machine.getTotalQtrs();
         machine.vend();
         Assert.assertEquals(CCoinBox.State.empty, machine.getState());
@@ -198,6 +199,7 @@ public class TestCCoinBox {
         Assert.assertEquals(true, machine.getAllowVend());
         // vend [curQtrs == 3] / totalQtrs = totalQtrs + 2; curQtrs = 1; allowVend = false; -> notAllowed
         while (machine.getCurQtrs() != 3) {
+            // Manually added event here
             machine.addQtr();
         }
         final int totalQtrs = machine.getTotalQtrs();
@@ -229,6 +231,7 @@ public class TestCCoinBox {
         Assert.assertEquals(true, machine.getAllowVend());
         // vend [curQtrs > 3] / totalQtrs = totalQtrs + 2; curQtrs = curQtrs - 2; -> allowed
         while (machine.getCurQtrs() <= 3) {
+            // Manually added event here
             machine.addQtr();
         }
         final int totalQtrs = machine.getTotalQtrs();
