@@ -11,7 +11,12 @@ Team Members : Sapon-Cousineau, Aleksi ; Chen, Yuechuan
 [TOC]
 
 ##Running the Source
+
+###method 1 : script 
 1. Download the zipped assignment and unzip to a directory 
+2. in terminal execute `run.sh ccoinbox.xml`, `ccoinbox.xml` can be replaced by any state machine definitions 
+
+###method 2 : IDE
 2. open Intelliji idea 
 3. on Menu : select `New` --> `Project from existing source...` option
 4. on the project import dialog : navigate to the project directory and select `Software-Validation-Assignment.iml` to import the project.
@@ -39,7 +44,7 @@ This simple state machine convers all transitional behaviors of the CCoinbox SM 
 Although Code generated is pretty solid, we still need to make a few alterations to the generated code. 
 Inside the method block of `conformanceTest[7..9]` in the GeneratedTestCCoinBox class. We have to throw an `UnsupportedOperationExcaption` to indicate that the generated tests are incomplete and needed manual fix. This is beacuse our implementation cannot deduce from the state machine diagram the complex steps required to take in order to meet a condition. 
 
-For example, in `conformanceTest9` we are able to test if  `curQtrs` is equal to 3, but when it does not meet such requirement, the prorgram will not know what to do to bring the `curQtrs` value to 3. Hence, human intervention is necessary :
+For example, in `conformanceTest9` we are able to test if  `curQtrs` is equal to 3, but when it does not meet such requirement, the program will not know what to do to bring the `curQtrs` value to 3. Hence, human intervention is necessary :
 
 ```java
 // generated
@@ -55,8 +60,33 @@ while (machine.getCurQtrs() <= 3) {
 
 
 ##Defects of CCoinBox implementation 
-- list defects 
-- how to fix each 
+1. `allowVend` is never set to false in `CCoinBox#returnQtrs()` : this is solved by calling `setAllowVend(false);`
+2. `CCoinBox#reset()` never reset the `allowVend` state : solved by adding `setAllowVend(false);` before the return statement;
+3. The logic in `CCoinBox#addQtr()` is false , the state can corrupted by calling this method. This is solved by rewriting the method :
+
+```java
+ public boolean addQtr()
+  {
+    boolean wasEventProcessed = false;
+
+    curQtrs += 1;
+
+    if (curQtrs >=2 ){
+      setState(State.allowed);
+      setAllowVend(true);
+    }
+    else {
+      setState(State.notAllowed);
+      setAllowVend(false);
+    }
+    wasEventProcessed = true;
+
+    return wasEventProcessed;
+  }
+```
 
 ##Main challenges to automate sneak path generation from a SM conforming to the metamodel in Fig.1
+
+Generating junit test cases requires us to know the expected results of a particular test. However this is not the case for the state machine defined in fig.1. The expected error results(error messages , thrown exceptions) are not defined explicitly when we create a sneak path test hence we will still need to manually define (in advance) each of the acceptable outcome from the sneak path test case in order for us to generate test cases.
+
 

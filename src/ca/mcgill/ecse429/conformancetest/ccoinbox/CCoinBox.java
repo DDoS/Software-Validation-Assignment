@@ -117,32 +117,25 @@ public class CCoinBox
         // Other states do respond to this event
     }
 
+    setAllowVend(false);
     return wasEventProcessed;
   }
 
   public boolean addQtr()
   {
     boolean wasEventProcessed = false;
-    
-    State aState = state;
-    switch (aState)
-    {
-      case empty: //same as allowed
-      case allowed:
-        curQtrs = curQtrs + 1;
-        setState(State.notAllowed);
-        wasEventProcessed = true;
-        break;
-      case notAllowed:
-        curQtrs = curQtrs + 1;
-        allowVend = true;
-        setState(State.allowed);
-        wasEventProcessed = true;
-        break;
 
-      default:
-        // Other states do respond to this event
+    curQtrs += 1;
+
+    if (curQtrs >=2 ){
+      setState(State.allowed);
+      setAllowVend(true);
     }
+    else {
+      setState(State.notAllowed);
+      setAllowVend(false);
+    }
+    wasEventProcessed = true;
 
     return wasEventProcessed;
   }
@@ -175,6 +168,7 @@ public class CCoinBox
         // Other states do respond to this event
     }
 
+    setAllowVend(false);
     return wasEventProcessed;
   }
 
