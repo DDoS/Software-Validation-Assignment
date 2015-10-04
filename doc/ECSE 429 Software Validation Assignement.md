@@ -73,6 +73,7 @@ The comment was simply created from the transition information.
 
 ## Running the source
 Download the zipped assignment and unzip to a directory.  
+To generate tests for class not in the project, add the source into the `src` folder in the same package as described by the model file.  
 Follow the instructions for the desired method.
 
 ### Method 1: Script
